@@ -53,11 +53,20 @@ class ReplayMemory(object):
 
 class Dqn():
     def __init__(self, input_size, output_size, gamma):
+        self.model = Network(input_size, output_size)
+        
         self.gamma = gamma
         self.reward_window =  []
-        self.model = Network(input_size, output_size)
         self.memory = ReplayMemory(100000)
         self.optimizer = optim.Adam(self.model.parameters(),lr = 0.001)
         self.prev_state = torch.Tensor(input_size).unsqueeze(0)
         self.prev_output = 0
         self.prev_reward = 0
+
+    # use softmax to choose max q-value,
+    # while generating probability distributions for each output q-value,
+    # to choose the output action
+    def choose_action(self, state):
+        probs = F.softmax(self.model(Variable(state, volatile = True)) * 7) # 7 = temperature to exaggerate probabilities
+        action = probs.multinomial()
+        return action.data[0,0]
