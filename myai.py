@@ -70,3 +70,17 @@ class Dqn():
         probs = F.softmax(self.model(Variable(state, volatile = True)) * 7) # 7 = temperature to exaggerate probabilities
         action = probs.multinomial()
         return action.data[0,0]
+
+    # a function that adjusts the weights of the neural network transitions,
+    # using a sample of states (aka. batch)
+    def q_learn(self, batch_state, batch_next_state, batch_reward, batch_action):
+        outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
+        next_outputs = self.model(batch_next_state).detach().max(1)[0]
+        target = self.gamma * next_outputs + batch_reward
+        # calculate loss
+        td_loss = F.smooth_l1_loss(outputs, target)
+        # ?
+        self.optimizer.zero_grad()
+        # back propogate through the network
+        td_loss.backward(retain_variables = True)
+        self.optimizer.step()
