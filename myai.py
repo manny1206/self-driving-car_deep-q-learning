@@ -84,3 +84,9 @@ class Dqn():
         # back propogate through the network
         td_loss.backward(retain_variables = True)
         self.optimizer.step()
+
+    def update(self, last_reward, last_signal):
+        #remember that a state is the signal as a tensor
+        new_state = torch.Tensor(last_signal).float().unsqueeze(0)
+        self.memory.push(self.prev_state, new_state, torch.LongTensor([int(self.prev_output)]), 
+        torch.Tensor([self.prev_reward)])
