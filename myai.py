@@ -45,7 +45,7 @@ class ReplayMemory(object):
             del self.memory[0]
     
     # function to randomly sample from the memory
-    def random_sample(self, batch_size):
+    def rand_sample(self, batch_size):
         samples = zip(*random.sample(self.memory, batch_size))
         return map(lambda x: Variable(torch.cat(x, 0)), samples)
 
@@ -66,8 +66,9 @@ class Dqn():
     # use softmax to choose max q-value,
     # while generating probability distributions for each output q-value,
     # to choose the output action
-    def choose_action(self, state):
-        probs = F.softmax(self.model(Variable(state, volatile = True)) * 7) # 7 = temperature to exaggerate probabilities
+    def choose_output(self, state):
+        # get probs, w/ 7 multiplier to exaggerate softmax probabilities
+        probs = F.softmax(self.model(Variable(state, volatile = True)) * 7) 
         action = probs.multinomial()
         return action.data[0,0]
 
@@ -85,8 +86,25 @@ class Dqn():
         td_loss.backward(retain_variables = True)
         self.optimizer.step()
 
-    def update(self, last_reward, last_signal):
-        #remember that a state is the signal as a tensor
+    def update(self, reward, last_signal):
+        # remember that a state is the signal as a tensor
         new_state = torch.Tensor(last_signal).float().unsqueeze(0)
-        self.memory.push(self.prev_state, new_state, torch.LongTensor([int(self.prev_output)]), 
-        torch.Tensor([self.prev_reward)])
+        self.memory.push(self.prev_state, new_state, torch.LongTensor([int(self.prev_output)]), torch.Tensor([self.prev_reward)])
+        # select an output action
+        output = self.choose_action(new_state)
+        # learn after 100 events
+        if len(self.memory.memory) > 100:
+            batch_state, batch_next_state, batch_reward, batch_action = self.memory.rand_sample(100)
+            self.q_learn(batch_state, batch_next_state, batch_reward, batch_action)
+        # update variables
+        self.prev_output = output
+        self.prev_state = new_state
+        self.prev_reward = reward
+        self.reward_window.append(reward)
+        if len(self.reward_window) > 1000: #reward_window includes last 1000
+            del self.reward_window[0]
+        return output
+
+    # calculate the mean of reward_window
+    def score(self):
+        return sum(self.reward_window) / (len(self.reward_window) + 1)
