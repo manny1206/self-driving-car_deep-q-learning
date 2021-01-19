@@ -1,4 +1,5 @@
 # import libraries
+# normal libraries
 import numpy as np
 import random
 import os
@@ -89,7 +90,7 @@ class Dqn():
     def update(self, reward, last_signal):
         # remember that a state is the signal as a tensor
         new_state = torch.Tensor(last_signal).float().unsqueeze(0)
-        self.memory.push(self.prev_state, new_state, torch.LongTensor([int(self.prev_output)]), torch.Tensor([self.prev_reward)])
+        self.memory.push((self.last_state, new_state, torch.LongTensor([int(self.last_action)]), torch.Tensor([self.last_reward])))
         # select an output action
         output = self.choose_action(new_state)
         # learn after 100 events
@@ -108,3 +109,18 @@ class Dqn():
     # calculate the mean of reward_window
     def score(self):
         return sum(self.reward_window) / (len(self.reward_window) + 1)
+
+    def save(self):
+        torch.save({'saved_model' : self.model.state_dict(),
+                    'saved_optimizer': self.optimizer.state_dict()}, 'last_brain.pth')
+
+    def load(self):
+        # check for last_brain.pth
+        if os.path.isfile('last_brain.pth'):
+            print('* Loading saved brain...')
+            checkpoint = torch.load('last_brain.pth')
+
+        # update existing network
+            self.model.load_state_dict(checkpoint['saved_model'])
+            self.optimizer.load_state_dict(checkpoint['saved_optimizer'])
+            print('Done!')
