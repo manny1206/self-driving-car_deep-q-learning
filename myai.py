@@ -90,7 +90,7 @@ class Dqn():
     def update(self, reward, last_signal):
         # remember that a state is the signal as a tensor
         new_state = torch.Tensor(last_signal).float().unsqueeze(0)
-        self.memory.push((self.last_state, new_state, torch.LongTensor([int(self.last_action)]), torch.Tensor([self.last_reward])))
+        self.memory.push((self.prev_state, new_state, torch.LongTensor([int(self.prev_output)]), torch.Tensor([self.prev_reward])))
         # select an output action
         output = self.choose_action(new_state)
         # learn after 100 events
