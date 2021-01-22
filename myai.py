@@ -25,7 +25,8 @@ class Network(nn.Module):
         # full connection from hidden layer to output
         self.fc2 = nn.Linear(30, output_size)
         
-    def prop_forward(self, state):
+    # function for ai to propagate forward
+    def forward(self, state):
         x = F.relu(self.fc1(state))
         q_vals = self.fc2(x)
         
@@ -92,7 +93,7 @@ class Dqn():
         new_state = torch.Tensor(last_signal).float().unsqueeze(0)
         self.memory.push((self.prev_state, new_state, torch.LongTensor([int(self.prev_output)]), torch.Tensor([self.prev_reward])))
         # select an output action
-        output = self.choose_action(new_state)
+        output = self.choose_output(new_state)
         # learn after 100 events
         if len(self.memory.memory) > 100:
             batch_state, batch_next_state, batch_reward, batch_action = self.memory.rand_sample(100)
